@@ -16,6 +16,7 @@ const env: EnvConfig = {
   DB_URI: process.env.DB_URI as string,
   PORT: process.env.PORT,
   NODE_ENV: process.env.NODE_ENV,
+  SECRET_KEY: process.env.SECRET_KEY,
 };
 
 if (!env.DB_URI) {

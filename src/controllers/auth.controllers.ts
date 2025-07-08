@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import User from "../models/user.model";
 import { comparPassword, hashPassword } from "../utils/hashing";
 import { SECRET_KEY } from "../config/env";
-import mongoose from "mongoose";
 export const signIn = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -26,53 +25,65 @@ export const signIn = async (req: Request, res: Response) => {
         id: userNotfound._id,
         email: userNotfound.email,
       },
-      'alskdjfasdflaksjfhjkalsdfjdjskksjddj' as string,
+
+      SECRET_KEY as string,
       {
         expiresIn: "1h", // token will expire in 1 hour
       }
     );
     success(res, 200, "sign in successful", token);
   } catch (err) {
+    console.error("Error in signIn:", err);
+
     failed(res, 500, "internal server error", err as string);
     console.error("Error in signIn:", err);
   }
 };
 export const signUp = async (req: Request, res: Response) => {
-  const session = await mongoose.startSession();
+  // const session = await mongoose.startSession();
   try {
-    const { email, password, username } = req.body
+    const { email, password, username } = req.body;
 
     if (!email || !password || !username) {
-      return failed(res, 400, "email, password and username are required", "missing credentials");
+      return failed(
+        res,
+        400,
+        "email, password and username are required",
+        "missing credentials"
+      );
     }
 
-    await session.withTransaction(async () => {
-      // التحقق من وجود المستخدم ضمن نفس الجلسة
-      const userExist = await User.findOne({ email }).session(session);
-      if (userExist) {
-        throw new Error("UserAlreadyExists");
-      }
+    // await session.withTransaction(async () => {
+    // التحقق من وجود المستخدم ضمن نفس الجلسة
+    const userExist = await User.findOne({ email });
+    // .session(session);
+    if (userExist) {
+      throw new Error("UserAlreadyExists");
+    }
 
-      const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
-      const newUser = new User({
-        email,
-        password: hashedPassword,
-        username,
-      });
-
-      await newUser.save({ session });
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+      username,
     });
 
+    await newUser.save();
+    // });
+    console.log(req.headers);
     success(res, 201, "User created successfully");
   } catch (error) {
+    console.error("Error in signIn:", error);
+
     if ((error as Error).message === "UserAlreadyExists") {
       return failed(res, 409, "User already exists", "user already exists");
     }
     failed(res, 500, "Internal server error", (error as Error).message);
-  } finally {
-    session.endSession();
   }
+  // finally {
+  //   session.endSession();
+  // }
 };
 export const logout = async (req: Request, res: Response) => {};
 export const getMe = async (req: Request, res: Response) => {};
